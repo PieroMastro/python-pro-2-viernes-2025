@@ -1,0 +1,63 @@
+# --- PYTHON ---
+# Archivos de caché de Python y compilados
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Entornos virtuales
+venv/
+.venv/
+env/
+ENV/
+
+# Distribución y empaquetado
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Pruebas y cobertura
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+.pytest_cache/
+htmlcov/
+
+
+# --- EDITORES E IDEs ---
+# Visual Studio Code y Cursor
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+
+
+# --- SISTEMA OPERATIVO ---
+# Linux
+.DS_Store
+.Trash-*
+*~
+
+# Windows (por si algún alumno trabaja en Windows)
+Thumbs.db
+ehthumbs.db
+Desktop.ini
