@@ -14,6 +14,8 @@ from instructions import (
 )
 from ruffier import ruffier_index, check_int
 from timer import Counter
+from runner import Runner
+from sits import Sits
 
 # VARIABLES GLOBALES
 name = ""
@@ -22,40 +24,26 @@ pulse_1, pulse_2, pulse_3 = 0, 0, 0
 
 
 class IntroScreen(Screen):
-    """Pantalla de bienvenida e ingreso de datos del usuario (Nombre y Edad).
-
-    Esta clase hereda de Screen (de ScreenManager) y representa la primera
-    vista
-    que interactúa con el alumno/paciente al abrir la aplicación móvil.
-    """
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        # 1. Creación de componentes visuales (Widgets individuales)
-        # Etiqueta que muestra las instrucciones iniciales importadas desde el módulo instructions
         instructions = Label(
             text=TXT_INSTRUCTIONS,
             halign="center",
             text_size=(400, None)
         )
 
-        # Etiquetas descriptivas para alinear junto a los campos de texto
         name_text = Label(text="Ingrese su nombre:", halign="right")
         age_text = Label(text="Ingrese su edad:", halign="right")
 
-        # Campos de entrada de texto interactivos (multiline=False evita saltos de línea)
         self.name_input = TextInput(multiline=False)
         self.age_input = TextInput(text="7", multiline=False)
 
-        # Botón de acción principal para avanzar a la siguiente pantalla
         self.button = Button(
             text="Inicio", size_hint=(0.3, 0.2), pos_hint={"center_x": 0.5}
         )
-        # Vinculación del evento de presión del botón con el método de transición
         self.button.on_press = self.next
 
-        # 2. Layouts horizontales, texto / input
         input_line_1 = BoxLayout(size_hint=(0.8, None), height="30sp")
         input_line_2 = BoxLayout(size_hint=(0.8, None), height="30sp")
 
@@ -65,22 +53,15 @@ class IntroScreen(Screen):
         input_line_2.add_widget(age_text)
         input_line_2.add_widget(self.age_input)
 
-        # 3. Configuración del layout primario (vertical) que apila todos los elementos
         main_layout = BoxLayout(orientation="vertical", padding=10, spacing=10)
         main_layout.add_widget(instructions)
         main_layout.add_widget(input_line_1)
         main_layout.add_widget(input_line_2)
         main_layout.add_widget(self.button)
 
-        # 4. Adición del layout contenedor principal a la pantalla actual
         self.add_widget(main_layout)
 
     def next(self):
-        """Método de control para validar datos y cambiar de pantalla.
-
-        Captura el nombre y la edad introducidos y los almacena en las variables
-        globales.
-        """
         global name, age
 
         name = self.name_input.text
@@ -119,7 +100,6 @@ class PulseScr(Screen):
         main_layout.add_widget(self.button)
 
         self.add_widget(main_layout)
-
         self.counter_label.bind(done=self.finish_register)
 
     def on_press_button(self):
@@ -139,7 +119,7 @@ class PulseScr(Screen):
     def next(self):
         global pulse_1
 
-        pulse_1 = int(self.pulse_1_input.text)
+        pulse_1 = check_int(self.pulse_1_input.text)
 
         if pulse_1 < 8 or pulse_1 == False:
             pulse_1 = 0
@@ -149,20 +129,68 @@ class PulseScr(Screen):
 
 
 class CheckSits(Screen):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        instructions = Label(text=TXT_TEST2)
-        self.button = Button(
-            text="Siguiente", size_hint=(0.3, 0.2), pos_hint={"center_x": 0.5}
-        )
-        self.button.on_press = self.next
 
-        main_layout = BoxLayout(orientation="vertical", padding=10, spacing=10)
+        total_sentadillas = 30
+
+        instructions = Label(
+            text=TXT_SITS,
+            halign="center",
+            size_hint=(1, 0.2)
+        )
+        instructions.bind(size=lambda s, w: setattr(s, 'text_size', s.size))
+
+        # 1. Instanciamos el contador de texto (Sits)
+        self.contador_label = Sits(
+            total=total_sentadillas,
+            font_size="20sp",
+            size_hint=(1, 0.1)
+        )
+
+        # 2. Instanciamos el botón animado (Runner)
+        self.runner_widget = Runner(
+            total=total_sentadillas,
+            steptime=1.5,
+            size_hint=(1, 0.5)
+        )
+
+        # 3. enlace de la propiedad value de Runner con el metodo de Sits
+        self.runner_widget.bind(value=self.contador_label.actualizar_contador)
+        # 4. enlace del estado 'finished' para habilitar el avance al terminar
+        self.runner_widget.bind(finished=self.verificar_terminado)
+
+        self.button = Button(
+            text="Iniciar Sentadillas",
+            size_hint=(0.5, 0.15),
+            pos_hint={"center_x": 0.5},
+            background_normal="",
+            background_color=(0.2, 0.7, 0.4, 1)
+        )
+        self.button.on_press = self.on_press_button
+
+        main_layout = BoxLayout(orientation="vertical", padding=15, spacing=10)
         main_layout.add_widget(instructions)
+        main_layout.add_widget(self.contador_label)
+        main_layout.add_widget(self.runner_widget)
         main_layout.add_widget(self.button)
 
         self.add_widget(main_layout)
+
+    def on_press_button(self):
+        if self.button.text == "Iniciar Sentadillas":
+            self.button.disabled = True
+            self.button.text = "Prueba en curso..."
+            self.runner_widget.start()
+        elif self.button.text == "Continuar":
+            self.next()
+
+    def verificar_terminado(self, instance, valor):
+        """Se activa automáticamente cuando el Runner termina todas las repeticiones."""
+        if valor:
+            self.button.text = "Continuar"
+            self.button.disabled = False
+            self.button.background_color = (0.2, 0.7, 0.4, 1)
 
     def next(self):
         self.manager.current = "pulse2"
@@ -172,8 +200,6 @@ class PulseScr2(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        # Variable para llevar el control estricto de la fase actual
-        # Fases: 1 = 2da toma (15s), 2 = Descanso (30s), 3 = 3ra toma (15s)
         self.phase = 1
 
         instructions = Label(text=TXT_TEST3)
@@ -234,8 +260,7 @@ class PulseScr2(Screen):
                 return
 
             self.pulse_2_input.disabled = True
-            self.phase = 2  # cambiamos al siguiente estado
-            # reiniciamos y establecemos el nuevo timer
+            self.phase = 2
             self.counter_label.restart(30)
             self.counter_label.start()
             self.button.disabled = True
@@ -254,16 +279,13 @@ class PulseScr2(Screen):
     def handle_timer_finish(self, instance, valor):
         if valor:
             if self.phase == 1:
-                # fin de la 2da toma: habilitamos el input 2 y pedimos iniciar descanso
                 self.pulse_2_input.disabled = False
                 self.button.text = "Iniciar Descanso (30s)"
                 self.button.disabled = False
             elif self.phase == 2:
-                # Fin del descanso: habilitamos el botón para los últimos 15s
                 self.button.text = "Iniciar Última Toma (15s)"
                 self.button.disabled = False
             elif self.phase == 3:
-                # Fin de la 3ra toma
                 self.pulse_3_input.disabled = False
                 self.button.text = "Finalizar"
                 self.button.disabled = False
